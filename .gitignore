@@ -2,7 +2,7 @@
 node_modules
 Homestead.yaml
 Homestead.json
-.env
+#.env
 .idea
 /_ide_helper.php
 /config.testing
