@@ -1,0 +1,64 @@
+name: Deploy Koel App to AWS Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - main  # Adjust the branch name as needed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code from GitHub
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up AWS credentials for AWS SDKs (AWS CLI, EB CLI, etc.)
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: ap-south-1  # Replace with your AWS region
+
+      # Step 3: Install PHP, Composer, and other dependencies for Koel
+      - name: Install PHP and Composer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y php-cli php-zip php-mbstring php-curl php-xml php-mysql unzip
+          curl -sS https://getcomposer.org/installer | php
+          sudo mv composer.phar /usr/local/bin/composer
+
+      # Step 4: Install PHP Composer dependencies
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      # Step 5: (Optional) Install Node.js dependencies (if needed for Koel's frontend)
+      - name: Install Node.js and NPM dependencies
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          npm install
+
+      # Step 6: Build the assets (if required for the frontend)
+      - name: Build Koel frontend assets (if applicable)
+        run: |
+          npm run prod  # Run build scripts for Koel's frontend assets if necessary (this can be skipped if not required)
+
+      # Step 7: Create a deployment ZIP file
+      - name: Create deployment package
+        run: |
+          zip -r deploy.zip * .env .ebextensions  # Make sure to include the .env and .ebextensions folder if necessary
+
+      # Step 8: Deploy to AWS Elastic Beanstalk using the Beanstalk deploy action
+      - name: Deploy to AWS Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: koel-app  # Replace with your Elastic Beanstalk app name
+          environment_name: koel-app-env  # Replace with your Elastic Beanstalk environment name
+          version_label: ${{ github.sha }}  # Unique version identifier (Git commit hash)
+          region: ap-south-1  # Replace with your AWS region
+          deployment_package: deploy.zip  # Path to the deployment package
