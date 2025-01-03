@@ -14,8 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
- 
-
       # Step 3: Install PHP, Composer, and other dependencies for Koel
       - name: Install PHP and Composer
         run: |
@@ -24,35 +22,46 @@ jobs:
           curl -sS https://getcomposer.org/installer | php
           sudo mv composer.phar /usr/local/bin/composer
 
-      # Step 4: Install PHP Composer dependencies
+      # Step 4: Install PHP dependencies
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist
 
-      # Step 5: (Optional) Install Node.js dependencies (if needed for Koel's frontend)
+      # Step 5: Install Node.js dependencies (if applicable)
       - name: Install Node.js and NPM dependencies
         run: |
           curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
           sudo apt-get install -y nodejs
           npm install
 
-      # Step 6: Build the assets (if required for the frontend)
+      # Step 6: Build the assets (if required for Koel frontend)
       - name: Build Koel frontend assets (if applicable)
         run: |
-          npm run build  # Run build scripts for Koel's frontend assets if necessary (this can be skipped if not required)
+          npm run build
 
       # Step 7: Create a deployment ZIP file
       - name: Create deployment package
         run: |
           zip -r deploy.zip * .env .ebextensions  # Make sure to include the .env and .ebextensions folder if necessary
 
-      # Step 8: Deploy to AWS Elastic Beanstalk using the Beanstalk deploy action
+      # Step 8: Deploy to AWS Elastic Beanstalk
       - name: Deploy to AWS Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: koel-app  # Replace with your Elastic Beanstalk app name
-          environment_name: koel-app-env  # Replace with your Elastic Beanstalk environment name
+          application_name: koel-app-1  # Replace with your Elastic Beanstalk app name
+          environment_name: koel-app-1-env  # Replace with your Elastic Beanstalk environment name
           version_label: ${{ github.sha }}  # Unique version identifier (Git commit hash)
           region: ap-south-1  # Replace with your AWS region
           deployment_package: deploy.zip  # Path to the deployment package
+
+      # Step 9: Run Database Migrations on Elastic Beanstalk instance
+      - name: Run Database Migrations
+        uses: appleboy/ssh-action@v0.1.4
+        with:
+          host: ${{ secrets.EB_HOST }}  # Replace with your Elastic Beanstalk instance's host or public IP
+          username: root  # Adjust if using a different EC2 user, e.g., 'ubuntu' for Ubuntu instances
+          key: ${{ secrets.EB_SSH_PRIVATE_KEY }}  # Use your SSH private key for accessing the instance
+          script: |
+            cd /var/app/current  # Navigate to the deployment directory
+            php artisan migrate --force  # Run the migration command (use --force in production to avoid prompts)
