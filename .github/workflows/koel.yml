@@ -60,8 +60,8 @@ jobs:
         uses: appleboy/ssh-action@v0.1.4
         with:
           host: ${{ secrets.EB_HOST }}  # Replace with your Elastic Beanstalk instance's host or public IP
-          username: ec2-user # Adjust if using a different EC2 user, e.g., 'ubuntu' for Ubuntu instances
-          key: ${{ secrets.EB_SSH_PRIVATE_KEY }}  # Use your SSH private key for accessing the instance
+          username: root # Adjust if using a different EC2 user, e.g., 'ubuntu' for Ubuntu instances
+          key: ${{ secrets.EB_SSH_PASSWORD }}  # Use your SSH private key for accessing the instance
           script: |
             cd /var/app/current  # Navigate to the deployment directory
             php artisan migrate --force  # Run the migration command (use --force in production to avoid prompts)
