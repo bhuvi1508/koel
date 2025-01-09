@@ -14,17 +14,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Set up Amazon Linux 2023 environment for PHP and dependencies
+      # Step 2: Set up Amazon Linux 2023 environment for PHP and NVM
       - name: Set up Amazon Linux 2023 environment for PHP and NVM
         run: |
           # Install dependencies for NVM, Node.js, and PHP
-          sudo yum install -y gcc-c++ make curl git
+          sudo dnf install -y gcc-c++ make curl git  # Use dnf for Amazon Linux 2023
 
           # Install NVM (Node Version Manager)
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-          
+
           # Add NVM to the current shell session
-          source ~/.bashrc  # To make sure nvm is available in the current session
+          source ~/.bashrc  # Ensure nvm is available in the current session
 
           # Install Node.js 20.x using NVM
           nvm install 20
@@ -34,7 +34,7 @@ jobs:
           nvm alias default 20
 
           # Install PHP and other necessary dependencies for Koel
-          sudo yum install -y php-cli php-zip php-mbstring php-curl php-xml php-mysqlnd unzip
+          sudo dnf install -y php-cli php-zip php-mbstring php-curl php-xml php-mysqlnd unzip
 
       # Step 3: Install Composer (PHP package manager)
       - name: Install Composer
@@ -75,14 +75,13 @@ jobs:
 
       # Step 9: Run Database Migrations on Elastic Beanstalk instance (using SSH)
       - name: Run Database Migrations
-        uses: appleboy/ssh-action@v0.1.5  # Use a newer version with password support
+        uses: appleboy/ssh-action@v0.1.5  # Use a newer version with private key support
         with:
           host: ${{ secrets.EB_HOST }}  # Replace with your Elastic Beanstalk instance's host or public IP
-          username: ec2-user  # Amazon Linux default username
-          password: ${{ secrets.EB_SSH_PRIVATE_KEY }}  # Use your SSH password for accessing the instance
+          username: ec2-user  # Default Amazon Linux username
+          private_key: ${{ secrets.EB_SSH_PRIVATE_KEY }}  # Use your SSH private key for accessing the instance
           script: |
             cd /var/app/current  # Navigate to the deployment directory
             php artisan migrate --force  # Run the migration command (use --force in production to avoid prompts)
-            php artisan db:seed --force
-            php artisan key:generate 
-
+            php artisan db:seed --force  # Run the database seeding if necessary
+            php artisan key:generate  # Ensure the app key is generated
