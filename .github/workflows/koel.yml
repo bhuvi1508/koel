@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest  # GitHub Action runner environment (not specific to EC2)
+    runs-on: centos-latest  # GitHub Action runner environment (not specific to EC2)
 
     steps:
       # Step 1: Checkout the code from GitHub
