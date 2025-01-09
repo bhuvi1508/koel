@@ -3,7 +3,7 @@ name: Deploy Koel App to AWS Elastic Beanstalk
 on:
   push:
     branches:
-      - master  # Adjust the branch name as needed
+      - master  #Adjust the branch name as needed
 
 jobs:
   deploy:
